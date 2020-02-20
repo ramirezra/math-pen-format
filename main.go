@@ -52,7 +52,7 @@ func run(args []string, stdout io.Writer) error {
 // 2020-02-16 9:58:28,"First Name: Name1, Last Name: Name2, Participating in Game Day?: Yes; First Name: Brother1, Last Name: Name2, Participating in Game Day?: No;",Parent,Best,(111) 123456y,Yes,No
 // 2020-02-16 9:30:00,"First Name: Test, Last Name: TestLastName, Participating in Game Day?: Yes;",Parent,TestLastName,(234) 12345678,Yes,Yes
 
-func readFile(args []string) []string {
+func readFile(args []string) [][]string {
 	// Read csv file
 	file, err := os.Open(args[1])
 	if err != nil {
@@ -73,16 +73,29 @@ func readFile(args []string) []string {
 			continue
 		} else {
 			items := strings.Split(item[1], ";")
+
 			for _, student := range items {
+				if student == "" {
+					continue
+				}
 				students = append(students, strings.Trim(student, " "))
 			}
 		}
 	}
-	fmt.Println(students[1])
-	return students
+
+	var participants [][]string
+	for _, student := range students {
+		participant := strings.Split(student, ",")
+		for j, field := range participant {
+			parse := strings.SplitAfter(field, ": ")
+			participant[j] = parse[1]
+		}
+		participants = append(participants, participant)
+	}
+	return participants
 }
 
-func writeFile(students []string) {
+func writeFile(participants [][]string) {
 	csvFile, err := os.Create("result.csv")
 	if err != nil {
 		log.Fatalln(err)
@@ -90,16 +103,12 @@ func writeFile(students []string) {
 	defer csvFile.Close()
 
 	writer := csv.NewWriter(csvFile)
-	// for _, student := range students {
-	// 	line := student
-	// 	err := writer.Write(line)
-	// 	if err != nil {
-	// 		log.Fatalln(err)
-	// 	}
-	// }
-	err = writer.Write(students)
-	if err != nil {
-		log.Fatalln(err)
+
+	for _, participant := range participants {
+		err = writer.Write(participant)
+		if err != nil {
+			log.Fatalln(err)
+		}
+		writer.Flush()
 	}
-	writer.Flush()
 }
