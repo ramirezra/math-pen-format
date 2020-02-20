@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/csv"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -28,12 +29,14 @@ func main() {
 
 // Entry struct defined
 type Entry struct {
-	Students string
+	FirstName string
+	LastName  string
+	Attending string
 }
 
 func run(args []string, stdout io.Writer) error {
 	if len(args) < 2 {
-		// return errors.New("no file")
+		return errors.New("no file")
 	}
 	for _, file := range args[1:] {
 		fmt.Fprintf(stdout, "File name: %s\n", file)
@@ -59,20 +62,24 @@ func readFile(args []string) []string {
 
 	reader := csv.NewReader(file)
 	reader.FieldsPerRecord = -1
-	record, err := reader.ReadAll()
+	data, err := reader.ReadAll()
 	if err != nil {
 		log.Fatalln(err)
 	}
 
 	var students []string
-	for _, item := range record {
-		items := strings.Split(item[1], ";")
-		for _, student := range items {
-			students = append(students, student)
+	for i, item := range data {
+		if i == 0 {
+			continue
+		} else {
+			items := strings.Split(item[1], ";")
+			for _, student := range items {
+				students = append(students, strings.Trim(student, " "))
+			}
 		}
 	}
+	fmt.Println(students[1])
 	return students
-
 }
 
 func writeFile(students []string) {
